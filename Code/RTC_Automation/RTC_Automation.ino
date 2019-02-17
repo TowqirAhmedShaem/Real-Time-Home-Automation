@@ -1,8 +1,8 @@
 /*
- * Automatic Home  Appliance Controlling On Basis of Time
- * Author : Towqir Ahmed Shaem
- * This project is under development
- */
+   Automatic Home  Appliance Controlling On Basis of Time
+   Author : Towqir Ahmed Shaem
+   This project is under development
+*/
 #include <Wire.h>
 #include "ds3231.h"
 
@@ -25,49 +25,27 @@ bool firstFlag = true;
 #define thirdPlug   3
 #define fourthPlug  2
 
-// Plug stop time interval Like Stop 2:48 -  2:50
-#define firstPlughour1  5
-#define firstPlugmin1   1
-#define firstPlughour2  17
-#define firstPlugmin2   30
+const int row = 6;
+const int column = 5;
 
-//Filter
-#define secondPlughour1  9
-#define secondPlugmin1   30
-#define secondPlughour2  11
-#define secondPlugmin2   0
+int timeschedule[row][column] = {
 
-#define secondPlughour3  14
-#define secondPlugmin3   45
-#define secondPlughour4  15
-#define secondPlugmin4   1
-
-//Light
-#define thirdPlughour1  5
-#define thirdPlugmin1   1
-#define thirdPlughour2  17
-#define thirdPlugmin2   30
-
-//Filter
-#define fourthPlughour1  9
-#define fourthPlugmin1   30
-#define fourthPlughour2  11
-#define fourthPlugmin2   0
-
-//Filter
-#define fourthPlughour3  14
-#define fourthPlugmin3   45
-#define fourthPlughour4  15
-#define fourthPlugmin4   1
+  {5,  05, 15,  18, 00 },
+  {4,  10, 15,  11, 30 },
+  {4,  22, 00,  23, 00 },
+  {3,  05, 15,  18, 00 },
+  {2,  10, 15,  11, 30 },
+  {2,  22, 00,  23, 00 }
+};
 
 void setup()
 {
 
   Serial.begin(9600);
   Wire.begin();
-  
+
   DS3231_init(DS3231_CONTROL_INTCN);
-  
+
   memset(recv, 0, BUFF_MAX);
   Serial.println("GET time");
 
@@ -158,92 +136,27 @@ void loop()
 
 
 void plugChecking() {
-  
-  // First Plug
-  if ( checkOnOFFState(t.hour, t.min, firstPlughour1, firstPlugmin1, firstPlughour2, firstPlugmin2) ) {
-    digitalWrite(firstPlug, HIGH);
-    firstFlag = true;
-  }
-  else {
-    if (firstFlag) {
-      delay(2000);
-      digitalWrite(firstPlug, LOW);
-      delay(2000);
-      digitalWrite(firstPlug, HIGH);
-      delay(2000);
-      //digitalWrite(firstPlug, LOW);
-      firstFlag = false;
-
-    }
-    digitalWrite(firstPlug, LOW);
-
-  }
-
-  // Second Plug
-  if ( checkOnOFFState(t.hour, t.min, secondPlughour1, secondPlugmin1, secondPlughour2, secondPlugmin2) ) {
-    digitalWrite(secondPlug, HIGH);
-  }
-    if ( checkOnOFFState(t.hour, t.min, secondPlughour3, secondPlugmin3, secondPlughour4, secondPlugmin4) ) {
-    digitalWrite(secondPlug, HIGH);
-  }
-  else {
-    digitalWrite(secondPlug, LOW);
-  }
-
-  // Third Plug
-  if ( checkOnOFFState(t.hour, t.min, thirdPlughour1, thirdPlugmin1, thirdPlughour2, thirdPlugmin2) ) {
-    digitalWrite(thirdPlug, HIGH);
-  }
-  else {
-    digitalWrite(thirdPlug, LOW);
-  }
-
-  // Fourth Plug
-  Serial.println("Fourth Plug");
-
-  if ( checkOnOFFState(t.hour, t.min, fourthPlughour1, fourthPlugmin1, fourthPlughour2, fourthPlugmin2)) {
-    digitalWrite(fourthPlug, HIGH);
-  }
-    if ( checkOnOFFState(t.hour, t.min, fourthPlughour3, fourthPlugmin3, fourthPlughour4, fourthPlugmin4)) {
-    digitalWrite(fourthPlug, HIGH);
-  }
-  else {
-    digitalWrite(fourthPlug, LOW);
-  }
-}
 
 
-bool checkOnOFFState( int presenthour, int presentminute, int primaryhour, int primaryminute, int secondaryhour, int secondaryminute ) {
-  if ( presenthour > primaryhour && presenthour < secondaryhour) {
-    return true;
-  }
-  else {
-    if ( presenthour == primaryhour && primaryhour == secondaryhour ) {
-      if ( presentminute >= primaryminute && presentminute <= secondaryminute) {
-        return true;
-      }
-    }
-    if ( presenthour == primaryhour && primaryhour != secondaryhour) {
-      if ( presentminute >= primaryminute ) {
-        return true;
-      }
-      else
-      return false;
-    }
-    if ( presenthour == secondaryhour && primaryhour != secondaryhour ) {
-      if ( presentminute <= secondaryminute ) {
-        return true;
-      }
-      else
-      return false;
+  for ( int i = 0; i < row; i++) {
+
+    int plug          = timeschedule[i][0];
+    int primaryTime   = ( timeschedule[i][1] * 100 + timeschedule[i][2] );
+    int secondaryTime = ( timeschedule[i][3] * 100 + timeschedule[i][4] );
+    int presentTime    = ( t.hour * 100 + t.min );
+
+    if ( presentTime >= primaryTime && presentTime <= secondaryTime ) {
+      digitalWrite(plug, HIGH);
     }
     else {
-      return false;
-    }
+      digitalWrite(plug, LOW);
 
+    }
   }
 
 }
+
+
 
 void parse_cmd(char *cmd, int cmdsize)
 {
