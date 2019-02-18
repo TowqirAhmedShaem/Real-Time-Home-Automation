@@ -17,7 +17,8 @@ void parse_cmd(char *cmd, int cmdsize);
 char tempF[6];
 float temperature;
 struct ts t;
-bool firstFlag = true;
+
+//#define debug true
 
 // Multiplug connected with arduino pin
 #define firstPlug   5
@@ -26,16 +27,22 @@ bool firstFlag = true;
 #define fourthPlug  2
 
 const int row = 6;
-const int column = 5;
+const int column = 7;
 
 int timeschedule[row][column] = {
 
-  {5,  05, 15,  18, 00 },
-  {4,  10, 15,  11, 30 },
-  {4,  22, 00,  23, 00 },
-  {3,  05, 15,  18, 00 },
-  {2,  10, 15,  11, 30 },
-  {2,  22, 00,  23, 00 }
+//#define firstPlug   5
+//#define secondPlug  4
+//#define thirdPlug   3
+//#define fourthPlug  2
+
+  {5,  05, 15,  18, 30, 1, 1 },
+  {4,  10, 15,  11, 35, 2, 1 },
+  {4,  22, 30,  23, 30, 3, 1 },  
+  {3,  05, 15,  18, 30, 4, 1 },
+  {2,  22, 30,  23, 30, 5, 1 },
+  {2,  10, 15,  11, 35, 6, 1 }
+  
 };
 
 void setup()
@@ -68,15 +75,18 @@ void setup()
 
 void loop()
 {
+  
   char in;
   char buff[BUFF_MAX];
   unsigned long now = millis();
+  
 
   // show time once in a while
   if ((now - prev > interval) && (Serial.available() <= 0)) {
     DS3231_get(&t);
     temperature = DS3231_get_treg(); //Get temperature
     dtostrf(temperature, 5, 1, tempF);
+    
     Serial.print("Temp : ");
     Serial.print(tempF);
     Serial.println(" C ");
@@ -144,15 +154,62 @@ void plugChecking() {
     int primaryTime   = ( timeschedule[i][1] * 100 + timeschedule[i][2] );
     int secondaryTime = ( timeschedule[i][3] * 100 + timeschedule[i][4] );
     int presentTime    = ( t.hour * 100 + t.min );
+    
+#ifdef debug
+    Serial.print("Plug NUmber");
+    Serial.println(plug);
+    Serial.print("Primary TIme");
+    Serial.println(primaryTime);
+    Serial.print("Secondary Time : ");
+    Serial.println(secondaryTime);
+    Serial.print("Present Time : ");
+    Serial.println(presentTime);
+#endif
 
     if ( presentTime >= primaryTime && presentTime <= secondaryTime ) {
-      digitalWrite(plug, HIGH);
+      timeschedule[i][6] = 1;
+      
+#ifdef debug
+      Serial.print(plug);
+      Serial.println(" : HIGH");
+#endif
     }
     else {
-      digitalWrite(plug, LOW);
-
+      timeschedule[i][6] = 0;
+      
+#ifdef debug
+      Serial.print(plug);
+      Serial.println(" : LOW");
+#endif
     }
   }
+
+  bool flag = false;
+  
+   for( int i = 0; i< row; i++){
+    for ( int j = 0; j< row; j++){
+      if( timeschedule[i][0] == timeschedule[j][0] ){
+  
+          if( timeschedule[i][6] == timeschedule[j][6] &&  timeschedule[i][6] == 0){
+            flag = false;
+          }
+          else{
+            flag = true;
+            break;
+          }
+        }
+ 
+    }
+
+    if(flag){
+      digitalWrite(timeschedule[i][0], HIGH);
+    }
+    else{
+      digitalWrite(timeschedule[i][0], LOW);
+
+    }
+    
+   }
 
 }
 
